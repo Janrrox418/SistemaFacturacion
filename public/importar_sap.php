@@ -224,7 +224,7 @@ require_once '../templates/header.php';
             <button type="submit" class="btn btn-primary" onclick="this.disabled=true;this.innerHTML='Importando...';this.form.submit();">
                 <i class="fas fa-download me-2"></i> Iniciar Importación desde SAP
             </button>
-            <a href="index.php" class="btn btn-secondary">Volver al inicio</a>
+            <a href="../index.php" class="btn btn-secondary">Volver al inicio</a>
         </form>
     </div>
 </div>

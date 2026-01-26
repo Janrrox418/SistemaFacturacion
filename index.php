@@ -3,14 +3,14 @@ session_start();
 
 // Verificar si el proveedor está logueado, si no, redirigir a la página de login
 if (!isset($_SESSION['proveedor_id'])) {
-    header("Location: login.php");
+    header("Location: public/login.php");
     exit();
 }
 
 // configuración de la base de datos
-require_once '../config/database.php';
+require_once 'config/database.php';
 // cabecera de la página
-require_once '../templates/header.php';
+require_once 'templates/header.php';
 
 $proveedor_id = $_SESSION['proveedor_id'];
 
@@ -79,7 +79,7 @@ $error_msg = $_GET['error'] ?? null;
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span>Listado de Empresas Cliente</span>
-        <a href="clientes.php?action=add" class="btn btn-primary btn-sm">Agregar Nueva Empresa</a>
+        <a href="public/clientes.php?action=add" class="btn btn-primary btn-sm">Agregar Nueva Empresa</a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -101,14 +101,14 @@ $error_msg = $_GET['error'] ?? null;
                         <?php foreach ($empresas as $empresa): ?>
                             <tr>
                                 <td>
-                                    <a href="facturas.php?empresa_id=<?php echo $empresa['id']; ?>"><?php echo htmlspecialchars($empresa['nombre']); ?></a>
+                                    <a href="public/facturas.php?empresa_id=<?php echo $empresa['id']; ?>"><?php echo htmlspecialchars($empresa['nombre']); ?></a>
                                 </td>
                                 <td><?php echo htmlspecialchars($empresa['email']); ?></td>
                                 <td><?php echo htmlspecialchars($empresa['telefono']); ?></td>
                                 <td class="text-end">
-                                    <a href="facturas.php?empresa_id=<?php echo $empresa['id']; ?>" class="btn btn-sm btn-info">Ver Órdenes</a>
-                                    <a href="clientes.php?action=edit&id=<?php echo $empresa['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
-                                    <a href="clientes.php?action=delete&id=<?php echo $empresa['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta empresa y todos sus clientes y facturas asociadas?');">Eliminar</a>
+                                    <a href="public/facturas.php?empresa_id=<?php echo $empresa['id']; ?>" class="btn btn-sm btn-info">Ver Órdenes</a>
+                                    <a href="public/clientes.php?action=edit&id=<?php echo $empresa['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                                    <a href="public/clientes.php?action=delete&id=<?php echo $empresa['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta empresa y todos sus clientes y facturas asociadas?');">Eliminar</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

@@ -16,7 +16,7 @@ $empresa_id = filter_input(INPUT_GET, 'empresa_id', FILTER_VALIDATE_INT);
 
 // Si no hay un ID de empresa, no podemos continuar.
 if (!$empresa_id) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -30,7 +30,7 @@ try {
 
     if (!$empresa) {
         // Si la empresa no existe o no pertenece al proveedor, se sale.
-        header("Location: index.php");
+        header("Location: ../index.php");
         exit();
     }
 } catch (PDOException $e) {
@@ -71,7 +71,7 @@ $error_msg = $_GET['error'] ?? null;
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2>Órdenes de Compra de: <?php echo htmlspecialchars($empresa['nombre']); ?></h2>
-        <a href="index.php" class="btn btn-sm btn-secondary">Volver a Empresas</a>
+        <a href="../index.php" class="btn btn-sm btn-secondary">Volver a Empresas</a>
     </div>
 </div>
 

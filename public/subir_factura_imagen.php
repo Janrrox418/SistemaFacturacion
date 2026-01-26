@@ -58,4 +58,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 }
-header("Location: index.php");
+header("Location: ../index.php");

@@ -3,7 +3,7 @@ session_start();
 
 // Si el proveedor ya está logueado redirige a la página principal
 if (isset($_SESSION['proveedor_id'])) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -30,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['proveedor_id'] = $proveedor['id'];
                     $_SESSION['proveedor_nombre'] = $proveedor['nombre'];
                     
-                    header("Location: index.php");
+                    header("Location: ../index.php");
                     exit();
                 } else {
                     $error = "La contraseña que ingresaste no es válida.";

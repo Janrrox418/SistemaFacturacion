@@ -22,7 +22,7 @@ $proveedor_id = $_SESSION['proveedor_id'];
 $factura_id = filter_input(INPUT_GET, 'factura_id', FILTER_VALIDATE_INT);
 
 if (!$factura_id) {
-    header("Location: index.php?error=" . urlencode('ID de factura no válido.'));
+    header("Location: ../index.php?error=" . urlencode('ID de factura no válido.'));
     exit();
 }
 

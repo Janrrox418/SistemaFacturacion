@@ -13,7 +13,7 @@ $factura_id = filter_input(INPUT_GET, 'factura_id', FILTER_VALIDATE_INT);
 $empresa_id = filter_input(INPUT_GET, 'empresa_id', FILTER_VALIDATE_INT);
 
 if (!$factura_id || !$empresa_id) {
-    header("Location: index.php?error=" . urlencode('Datos insuficientes para eliminar la orden de compra.'));
+    header("Location: ../index.php?error=" . urlencode('Datos insuficientes para eliminar la orden de compra.'));
     exit();
 }
 

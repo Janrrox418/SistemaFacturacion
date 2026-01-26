@@ -101,7 +101,7 @@ require_once '../templates/header.php';
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">Actualizar Perfil</button>
-            <a href="index.php" class="btn btn-secondary">Volver</a>
+            <a href="../index.php" class="btn btn-secondary">Volver</a>
         </form>
     </div>
 </div>

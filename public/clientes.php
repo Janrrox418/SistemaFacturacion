@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt_assoc = $pdo->prepare("INSERT INTO empresa_proveedores (empresa_id, proveedor_id) VALUES (?, ?)");
                 $stmt_assoc->execute([$new_empresa_id, $proveedor_id]);
                 $pdo->commit();
-                header("Location: index.php?success=" . urlencode('Empresa agregada exitosamente.'));
+                header("Location: ../index.php?success=" . urlencode('Empresa agregada exitosamente.'));
                 exit();
             } elseif ($action_post === 'edit' && $cliente_id_post) {
 
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sql = "UPDATE empresas_cliente ec JOIN empresa_proveedores ep ON ec.id = ep.empresa_id SET ec.nombre = ?, ec.email = ?, ec.telefono = ?, ec.direccion = ?, ec.sap_api_url = ?, ec.sap_api_username = ?, ec.sap_api_password = ? WHERE ec.id = ? AND ep.proveedor_id = ?";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([$nombre, $email, $telefono, $direccion, $sap_api_url, $sap_api_username, $password_to_save, $cliente_id_post, $proveedor_id]);
-                header("Location: index.php?success=" . urlencode('Cliente actualizado exitosamente.'));
+                header("Location: ../index.php?success=" . urlencode('Cliente actualizado exitosamente.'));
                 exit();
             }
         } catch (PDOException $e) {
@@ -116,7 +116,7 @@ if ($action === 'edit' && $cliente_id) {
         $sap_api_password = $cliente['sap_api_password'];
     } else {
         // Si el cliente no existe o no pertenece al proveedor redirige
-        header("Location: index.php?error=" . urlencode('Empresa no encontrada.'));
+        header("Location: ../index.php?error=" . urlencode('Empresa no encontrada.'));
         exit();
     }
 } elseif ($action === 'delete' && $cliente_id) {
@@ -143,10 +143,10 @@ if ($action === 'edit' && $cliente_id) {
         $stmt_delete_empresa->execute([$cliente_id, $proveedor_id]);
 
         $pdo->commit();
-        header("Location: index.php?success=" . urlencode('Empresa eliminada exitosamente.'));
+        header("Location: ../index.php?success=" . urlencode('Empresa eliminada exitosamente.'));
         exit();
     } catch (PDOException $e) {
-        header("Location: index.php?error=" . urlencode('Error al eliminar el cliente. Puede tener facturas asociadas.'));
+        header("Location: ../index.php?error=" . urlencode('Error al eliminar el cliente. Puede tener facturas asociadas.'));
         exit();
     }
 }
@@ -206,7 +206,7 @@ require_once '../templates/header.php';
             </div>
 
             <button type="submit" class="btn btn-primary"><?php echo ($action === 'edit') ? 'Actualizar Empresa' : 'Guardar Empresa'; ?></button>
-            <a href="index.php" class="btn btn-secondary">Cancelar</a>
+            <a href="../index.php" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 </div>
