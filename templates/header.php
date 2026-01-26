@@ -27,7 +27,7 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="perfil_proveedor.php">Mi Perfil</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="logout.php">Cerrar Sesión</a></li>
+                        <li><a class="dropdown-item" href="../public/logout.php">Cerrar Sesión</a></li>
                     </ul>
                 </div>
             </div>
