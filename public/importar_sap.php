@@ -46,12 +46,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$api_config || empty($api_config['sap_api_url']) || empty($api_config['sap_api_username']) || empty($api_config['sap_api_password'])) {
                 $error_msg = "La Empresa Cliente seleccionada no tiene configurada la URL, usuario o contraseña de la API SAP.";
             } else {
-        // Formatear las fechas al formato YYYYMMDD que requiere la API
-        $fecha_inicio_api = date('Ymd', strtotime($fecha_inicio));
-        $fecha_fin_api = date('Ymd', strtotime($fecha_fin));
+        // Formatear las fechas para la API. El formato puede variar (ej: Ymd o d/m/Y).
+        // Se ajusta a d/m/Y según el ejemplo del cliente.
+        $fecha_inicio_api = date('d/m/Y', strtotime($fecha_inicio));
+        $fecha_fin_api = date('d/m/Y', strtotime($fecha_fin));
 
         // CONFIGURACIÓN DE LA API 
-            $api_url = $api_config['sap_api_url'] . "&FECHAI={$fecha_inicio_api}&FECHAF={$fecha_fin_api}";
+            $base_url = $api_config['sap_api_url'];
+            $separator = strpos($base_url, '?') === false ? '?' : '&';
+            $query_params = [
+                'FECHAI' => $fecha_inicio_api,
+                'FECHAF' => $fecha_fin_api
+            ];
+            $api_url = $base_url . $separator . http_build_query($query_params);
             $username = $api_config['sap_api_username'];
             $password = $api_config['sap_api_password'];
 
