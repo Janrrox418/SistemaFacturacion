@@ -3,7 +3,9 @@ FROM php:8.3-apache
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libcurl4-openssl-dev \
     && docker-php-ext-install curl pdo_mysql \
-    && a2enmod rewrite \
+    && a2dismod mpm_event mpm_worker \
+    && a2enmod mpm_prefork rewrite \
+    && apache2ctl configtest \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
