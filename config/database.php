@@ -1,19 +1,42 @@
 <?php
 
-// Railway proporciona estas variables automáticamente si las vinculaste
-define('DB_HOST', getenv('MYSQLHOST') ?: 'localhost');
-define('DB_USER', getenv('MYSQLUSER') ?: 'root'); 
-define('DB_PASS', getenv('MYSQLPASSWORD') ?: '');     
-define('DB_NAME', getenv('MYSQLDATABASE') ?: 'db_facturacion'); 
-define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
+$production = getenv('APP_ENV') === 'production';
+$mysqlHost = getenv('MYSQLHOST');
+$mysqlUser = getenv('MYSQLUSER');
+$mysqlPassword = getenv('MYSQLPASSWORD');
+$mysqlDatabase = getenv('MYSQLDATABASE');
+
+if (
+    $production
+    && (
+        $mysqlHost === false || $mysqlHost === ''
+        || $mysqlUser === false || $mysqlUser === ''
+        || $mysqlPassword === false || $mysqlPassword === ''
+        || $mysqlDatabase === false || $mysqlDatabase === ''
+    )
+) {
+    error_log('Required MySQL environment variables are missing.');
+    http_response_code(500);
+    exit('La configuración de la base de datos está incompleta.');
+}
+
+$mysqlPort = getenv('MYSQLPORT');
+define('DB_HOST', $mysqlHost !== false && $mysqlHost !== '' ? $mysqlHost : 'localhost');
+define('DB_USER', $mysqlUser !== false && $mysqlUser !== '' ? $mysqlUser : 'root');
+define('DB_PASS', $mysqlPassword !== false ? $mysqlPassword : '');
+define('DB_NAME', $mysqlDatabase !== false && $mysqlDatabase !== '' ? $mysqlDatabase : 'db_facturacion');
+define('DB_PORT', $mysqlPort !== false && $mysqlPort !== '' ? $mysqlPort : '3306');
 
 try {
-    // Añadimos el puerto a la cadena de conexión DSN
-    $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME;
-    
+    $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
     $pdo = new PDO($dsn, DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->exec("SET NAMES 'utf8'");
 } catch (PDOException $e) {
-    die("ERROR: No se pudo conectar a la base de datos. " . $e->getMessage());
+    error_log('Database connection failed: ' . $e->getMessage());
+    http_response_code(500);
+    if ($production) {
+        exit('No fue posible conectar con la base de datos.');
+    }
+
+    exit('ERROR: No se pudo conectar a la base de datos. ' . $e->getMessage());
 }

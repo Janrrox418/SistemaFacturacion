@@ -1,0 +1,9 @@
+/vendor/
+/.env
+/.env.*
+!/.env.example
+/.vscode/
+/public/uploads/facturas/**
+!/public/uploads/facturas/.gitkeep
+/storage/facturas_sap/**
+!/storage/facturas_sap/.htaccess

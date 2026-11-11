@@ -1,0 +1,9 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:config|database|services|storage|templates|vendor|\.git|\.vscode)(?:/|$) - [F,L,NC]
+    RewriteRule (^|/)\. - [F,L]
+    RewriteRule ^(?:README\.md|composer\.(?:json|lock)|Dockerfile|\.dockerignore|railway-start\.sh)$ - [F,L,NC]
+    RewriteRule ^public/uploads/facturas(?:/|$) - [F,L,NC]
+</IfModule>

@@ -1,0 +1,10 @@
+.git
+.vscode
+.env
+.env.*
+!.env.example
+vendor
+storage/facturas_sap/*
+!storage/facturas_sap/.htaccess
+public/uploads/facturas/*
+!public/uploads/facturas/.gitkeep
