@@ -27,7 +27,7 @@ final class SapApiService
         private string $baseUrl,
         private ?string $username = null,
         private ?string $password = null,
-        private int $timeout = 90
+        private int $timeout = 180
     ) {
         $scheme = parse_url($baseUrl, PHP_URL_SCHEME);
         if (!filter_var($baseUrl, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
