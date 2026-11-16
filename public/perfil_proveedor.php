@@ -11,7 +11,6 @@ require_once '../services/SapApiService.php';
 
 $error = '';
 $perfil = [];
-$campos_faltantes = [];
 $campos = [
     'LIFNR' => 'Código de proveedor',
     'NAME1' => 'Nombre / Razón social',
@@ -65,7 +64,6 @@ try {
                 throw new UnexpectedValueException('SAP devolvió el perfil sin el identificador LIFNR.');
             }
             $perfil[$campo] = $valores_por_defecto[$campo];
-            $campos_faltantes[] = $etiqueta;
             continue;
         }
         if (!is_scalar($data[$campo])) {
@@ -77,7 +75,6 @@ try {
                 throw new UnexpectedValueException('SAP devolvió el perfil sin el identificador LIFNR.');
             }
             $perfil[$campo] = $valores_por_defecto[$campo];
-            $campos_faltantes[] = $etiqueta;
             continue;
         }
         $perfil[$campo] = $valor;
@@ -120,12 +117,6 @@ require_once '../templates/header.php';
         <?php if ($error !== ''): ?>
             <div class="alert alert-danger"><?php echo $escape($error); ?></div>
         <?php else: ?>
-            <?php if ($campos_faltantes !== []): ?>
-                <div class="alert alert-warning">
-                    SAP no devolvió estos datos del perfil: <?php echo $escape(implode(', ', $campos_faltantes)); ?>.
-                    Puede solicitar al administrador SAP que revise el servicio de perfil.
-                </div>
-            <?php endif; ?>
             <div class="row">
                 <?php foreach ($campos as $campo => $etiqueta): ?>
                     <div class="col-md-6 mb-3">

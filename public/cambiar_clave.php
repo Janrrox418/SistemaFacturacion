@@ -20,6 +20,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $clave_actual = $_POST['clave_actual'] ?? '';
     $clave_nueva = $_POST['clave_nueva'] ?? '';
     $confirmar_clave = $_POST['confirmar_clave'] ?? '';
+    $supplierId = is_string($_SESSION['proveedor_sap_id'] ?? null)
+        ? $_SESSION['proveedor_sap_id']
+        : '';
+    $supplierIdWithoutLeadingZeros = ltrim($supplierId, '0');
+    if ($supplierIdWithoutLeadingZeros === '') {
+        $supplierIdWithoutLeadingZeros = $supplierId;
+    }
+    $isSupplierNumberPassword = $supplierId !== ''
+        && in_array(
+            $clave_nueva,
+            array_unique([$supplierId, $supplierIdWithoutLeadingZeros]),
+            true
+        );
 
     if (!is_string($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
         $error = 'La solicitud expiró. Recargue la página e inténtelo nuevamente.';
@@ -27,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Los datos enviados no son válidos.';
     } elseif ($clave_actual === '' || $clave_nueva === '' || $confirmar_clave === '') {
         $error = 'Complete todos los campos de contraseña.';
-    } elseif (strlen($clave_nueva) < 8) {
-        $error = 'La nueva contraseña debe tener al menos 8 caracteres.';
+    } elseif (strlen($clave_nueva) < 8 && !$isSupplierNumberPassword) {
+        $error = 'Use una contraseña de al menos 8 caracteres o su número de proveedor.';
     } elseif (!hash_equals($clave_nueva, $confirmar_clave)) {
         $error = 'La confirmación no coincide con la nueva contraseña.';
     } else {
@@ -49,15 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? password_verify($clave_actual, $stored_password)
                         : hash_equals($stored_password, $clave_actual));
 
-                $supplierId = is_string($_SESSION['proveedor_sap_id'] ?? null)
-                    ? $_SESSION['proveedor_sap_id']
-                    : '';
                 if (!$current_password_valid && $supplierId !== '') {
-                    $supplierIdWithoutLeadingZeros = ltrim($supplierId, '0');
-                    if ($supplierIdWithoutLeadingZeros === '') {
-                        $supplierIdWithoutLeadingZeros = $supplierId;
-                    }
-
                     $initialPasswords = array_unique([
                         $supplierId,
                         $supplierIdWithoutLeadingZeros,
@@ -126,11 +131,12 @@ require_once '../templates/header.php';
                     </div>
                     <div class="mb-3">
                         <label for="clave_nueva" class="form-label">Nueva contraseña</label>
-                        <input type="password" class="form-control" id="clave_nueva" name="clave_nueva" minlength="8" autocomplete="new-password" required>
+                        <input type="password" class="form-control" id="clave_nueva" name="clave_nueva" autocomplete="new-password" required>
+                        <div class="form-text">Use al menos 8 caracteres o su número de proveedor.</div>
                     </div>
                     <div class="mb-3">
                         <label for="confirmar_clave" class="form-label">Confirmar nueva contraseña</label>
-                        <input type="password" class="form-control" id="confirmar_clave" name="confirmar_clave" minlength="8" autocomplete="new-password" required>
+                        <input type="password" class="form-control" id="confirmar_clave" name="confirmar_clave" autocomplete="new-password" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
                 </form>
