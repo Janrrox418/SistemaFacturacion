@@ -42,10 +42,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $stored_password = (string) $stored_password;
                 $password_info = password_get_info($stored_password);
+                $hashed_password = $stored_password !== ''
+                    && $password_info['algoName'] !== 'unknown';
                 $current_password_valid = $stored_password !== ''
-                    && ($password_info['algoName'] !== 'unknown'
+                    && ($hashed_password
                         ? password_verify($clave_actual, $stored_password)
                         : hash_equals($stored_password, $clave_actual));
+
+                $supplierId = is_string($_SESSION['proveedor_sap_id'] ?? null)
+                    ? $_SESSION['proveedor_sap_id']
+                    : '';
+                if (!$current_password_valid && $supplierId !== '') {
+                    $supplierIdWithoutLeadingZeros = ltrim($supplierId, '0');
+                    if ($supplierIdWithoutLeadingZeros === '') {
+                        $supplierIdWithoutLeadingZeros = $supplierId;
+                    }
+
+                    $initialPasswords = array_unique([
+                        $supplierId,
+                        $supplierIdWithoutLeadingZeros,
+                    ]);
+                    $storedPasswordIsInitial = false;
+                    foreach ($initialPasswords as $initialPassword) {
+                        $matchesStoredPassword = $hashed_password
+                            ? password_verify($initialPassword, $stored_password)
+                            : hash_equals($stored_password, $initialPassword);
+                        if ($matchesStoredPassword) {
+                            $storedPasswordIsInitial = true;
+                            break;
+                        }
+                    }
+
+                    foreach ($initialPasswords as $initialPassword) {
+                        if (hash_equals($initialPassword, $clave_actual)) {
+                            $current_password_valid = $storedPasswordIsInitial;
+                            break;
+                        }
+                    }
+                }
 
                 if (!$current_password_valid) {
                     $error = 'La contraseña actual no es correcta.';
