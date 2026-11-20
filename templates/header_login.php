@@ -12,10 +12,11 @@ $login_css_version = is_file($login_css_file) ? filemtime($login_css_file) : tim
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../public/css/style.css?v=<?php echo $login_css_version; ?>">
 </head>
-<body>
+<body class="login-page">
 
-<div class="container mt-5">
-    <div class="text-center">
-        <h1 class="display-4">Portal de proveedores</h1>
+<div class="login-shell container">
+    <div class="login-brand text-center">
+        <img src="../public/assets/bdcg-logo.png" alt="BDCG" class="login-brand-logo">
+        <h1 class="login-brand-title">Portal de proveedores</h1>
     </div>
-    <main class="mt-4">
+    <main class="login-main">

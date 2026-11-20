@@ -44,7 +44,9 @@ $sidebar_links = [
     <div class="app-sidebar-backdrop" data-sidebar-backdrop></div>
     <aside class="app-sidebar" id="appSidebar" aria-label="Navegación principal">
         <a class="app-sidebar-brand" href="<?php echo $base_path; ?>index.php" title="Portal de proveedores">
-            <span class="app-brand-mark" aria-hidden="true">PP</span>
+            <span class="app-brand-mark" aria-hidden="true">
+                <img src="<?php echo htmlspecialchars($app_url . '/public/assets/bdcg-logo.png', ENT_QUOTES, 'UTF-8'); ?>" alt="" class="app-brand-logo">
+            </span>
             <span class="app-sidebar-label">Portal de proveedores</span>
         </a>
         <div class="app-sidebar-user">

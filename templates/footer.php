@@ -1,6 +1,6 @@
         </main>
         <footer class="app-footer text-center text-muted">
-            <p>&copy; <?php echo date("Y"); ?> Tu Empresa. Todos los derechos reservados.</p>
+            <p>&copy; <?php echo date("Y"); ?> BDCG. Todos los derechos reservados.</p>
         </footer>
     </div>
 </div>
