@@ -463,7 +463,7 @@ h2,
 }
 
 .login-shell {
-    max-width: 520px;
+    max-width: 460px;
     padding-top: clamp(2rem, 7vh, 4.5rem);
     padding-bottom: 2rem;
 }

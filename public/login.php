@@ -304,7 +304,7 @@ require_once '../templates/header_login.php';
 ?>
 
 <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
+    <div class="col-12">
         <div class="card">
             <div class="card-header text-center">
                 <h3>Inicio de Sesión</h3>
