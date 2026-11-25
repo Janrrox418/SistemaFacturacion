@@ -5,9 +5,18 @@ if (!is_string($documentRoot) || $documentRoot === '') {
     return;
 }
 
-$privateConfigPath = dirname(rtrim($documentRoot, DIRECTORY_SEPARATOR))
-    . DIRECTORY_SEPARATOR
-    . 'facturacion-private.php';
+$configDirectory = dirname(rtrim($documentRoot, DIRECTORY_SEPARATOR));
+$directory = rtrim($documentRoot, DIRECTORY_SEPARATOR);
+while ($directory !== '' && $directory !== dirname($directory)) {
+    if (strtolower(basename($directory)) === 'public_html') {
+        $configDirectory = dirname($directory);
+        break;
+    }
+
+    $directory = dirname($directory);
+}
+
+$privateConfigPath = $configDirectory . DIRECTORY_SEPARATOR . 'facturacion-private.php';
 
 if (!is_file($privateConfigPath)) {
     return;

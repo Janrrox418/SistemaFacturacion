@@ -43,7 +43,7 @@ El proyecto también puede ejecutarse en un hosting compartido con PHP 8.2 o sup
 
 Sube el contenido del repositorio directamente a `public_html` (incluido el `.htaccess` y el `index.php` de la raíz; no subas `.git`). Crea la base MySQL y aplica las migraciones indicadas arriba.
 
-En la carpeta inmediatamente superior a `public_html`, crea `facturacion-private.php`. Debe devolver un arreglo PHP con las variables de producción, por ejemplo:
+Fuera de `public_html`, crea `facturacion-private.php` en la carpeta que lo contiene. Si el hosting coloca el directorio del subdominio dentro de `public_html`, el archivo privado debe quedar fuera del `public_html` de la web institucional. Debe devolver un arreglo PHP con las variables de producción, por ejemplo:
 
 ```php
 <?php
