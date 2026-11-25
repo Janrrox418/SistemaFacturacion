@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/runtime.php';
+
 $production = getenv('APP_ENV') === 'production';
 $mysqlHost = getenv('MYSQLHOST');
 $mysqlUser = getenv('MYSQLUSER');

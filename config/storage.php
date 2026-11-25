@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/runtime.php';
+
 $configuredStorageDirectory = getenv('INVOICE_STORAGE_PATH');
 define(
     'INVOICE_STORAGE_DIRECTORY',

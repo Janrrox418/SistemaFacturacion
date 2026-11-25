@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/runtime.php';
+
 $sapApiUrl = getenv('SAP_API_URL');
 if ($sapApiUrl === false || $sapApiUrl === '') {
     error_log('SAP_API_URL is required.');

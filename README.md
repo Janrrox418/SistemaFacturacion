@@ -36,3 +36,30 @@ Agrega un volumen persistente de Railway montado en `/data`. El contenedor guard
 5. Prueba inicio de sesión, consulta SAP, cambio de contraseña, carga y descarga de una factura. Verifica también que una ruta `/storage/...` no entregue archivos.
 
 Este entorno es para pruebas; antes de uso real deben acordarse respaldos, monitoreo y retención de datos.
+
+## Despliegue en hosting compartido (PHP)
+
+El proyecto también puede ejecutarse en un hosting compartido con PHP 8.2 o superior, Apache con `.htaccess`, las extensiones `pdo_mysql` y `curl`, y acceso de salida al servicio SAP. Este método no utiliza el `Dockerfile` ni `railway-start.sh`.
+
+Sube el contenido del repositorio directamente a `public_html` (incluido el `.htaccess` y el `index.php` de la raíz; no subas `.git`). Crea la base MySQL y aplica las migraciones indicadas arriba.
+
+En la carpeta inmediatamente superior a `public_html`, crea `facturacion-private.php`. Debe devolver un arreglo PHP con las variables de producción, por ejemplo:
+
+```php
+<?php
+return [
+    'APP_ENV' => 'production',
+    'MYSQLHOST' => 'localhost',
+    'MYSQLPORT' => '3306',
+    'MYSQLUSER' => 'usuario_completo',
+    'MYSQLPASSWORD' => 'contraseña',
+    'MYSQLDATABASE' => 'base_completa',
+    'SAP_API_URL' => 'https://sap.example.com/endpoint',
+    'SAP_API_CLIENT' => '401',
+    'SAP_API_USERNAME' => 'usuario_sap',
+    'SAP_API_PASSWORD' => 'contraseña_sap',
+    'INVOICE_STORAGE_PATH' => __DIR__ . '/facturas_sap',
+];
+```
+
+Reemplaza los valores de ejemplo por los datos reales del panel; omite las credenciales SAP si el servicio no las requiere. El archivo debe quedar fuera de `public_html`, no debe subirse a GitHub y debe tener permisos de lectura solo para la cuenta del hosting. Crea `facturas_sap` junto a ese archivo y permite que PHP escriba allí; así los adjuntos quedan fuera del directorio público. `config/runtime.php` carga esta configuración privada para la aplicación sin cambiar el uso de variables de entorno en Railway. No habilites depuración en producción.
