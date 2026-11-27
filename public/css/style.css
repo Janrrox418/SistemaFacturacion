@@ -469,18 +469,24 @@ h2,
 }
 
 .login-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin-bottom: 1.25rem;
+    text-align: left;
 }
 
 .login-brand-logo {
-    width: min(190px, 55vw);
-    height: auto;
-    margin-bottom: 0.5rem;
-    filter: drop-shadow(0 0.75rem 1.25rem rgba(0, 0, 0, 0.25));
+    width: 72px;
+    height: 72px;
+    flex: 0 0 72px;
+    object-fit: contain;
+    filter: drop-shadow(0 0.35rem 0.75rem rgba(0, 0, 0, 0.2));
 }
 
 .login-brand-title {
     margin: 0;
+    min-width: 0;
     color: #fff;
     font-size: clamp(1.35rem, 4vw, 1.75rem);
     font-weight: 700;
@@ -519,8 +525,14 @@ h2,
         padding-left: 1rem;
     }
 
+    .login-brand {
+        gap: 0.75rem;
+    }
+
     .login-brand-logo {
-        width: min(150px, 48vw);
+        width: 60px;
+        height: 60px;
+        flex-basis: 60px;
     }
 
     .login-main .card-body {
