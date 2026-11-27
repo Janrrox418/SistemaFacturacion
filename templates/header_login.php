@@ -17,6 +17,8 @@ $login_css_version = is_file($login_css_file) ? filemtime($login_css_file) : tim
 <div class="login-shell container">
     <div class="login-brand">
         <img src="../public/assets/bdcg-logo.png" alt="BDCG" class="login-brand-logo">
+    </div>
+    <div class="login-title text-center">
         <h1 class="login-brand-title">Portal de proveedores</h1>
     </div>
     <main class="login-main">
