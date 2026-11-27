@@ -6,9 +6,13 @@ if (!isset($_SESSION['proveedor_id'], $_SESSION['proveedor_sap_id'], $_SESSION['
     exit('Acceso denegado.');
 }
 
+$id = is_string($_GET['id'] ?? null) ? trim($_GET['id']) : '';
 $belnr = is_string($_GET['belnr'] ?? null) ? trim($_GET['belnr']) : '';
 $gjahr = is_string($_GET['gjahr'] ?? null) ? trim($_GET['gjahr']) : '';
-if (!preg_match('/^\d{1,20}$/', $belnr) || !preg_match('/^\d{4}$/', $gjahr)) {
+$hasValidId = preg_match('/^[1-9]\d{0,19}$/', $id) === 1;
+$hasLegacyKey = preg_match('/^\d{1,20}$/', $belnr) === 1
+    && preg_match('/^\d{4}$/', $gjahr) === 1;
+if (($id !== '' && !$hasValidId) || ($id === '' && !$hasLegacyKey)) {
     http_response_code(400);
     exit('Identificador de documento inválido.');
 }
@@ -17,17 +21,32 @@ require_once '../config/database.php';
 require_once '../config/storage.php';
 
 try {
-    $stmt = $pdo->prepare(
-        'SELECT archivo, mime_type
-         FROM proveedor_facturas_sap
-         WHERE bukrs = ? AND lifnr = ? AND belnr = ? AND gjahr = ?'
-    );
-    $stmt->execute([
-        (string) $_SESSION['proveedor_bukrs'],
-        (string) $_SESSION['proveedor_sap_id'],
-        $belnr,
-        $gjahr,
-    ]);
+    if ($hasValidId) {
+        $stmt = $pdo->prepare(
+            'SELECT belnr, archivo, mime_type
+             FROM proveedor_facturas_sap
+             WHERE bukrs = ? AND lifnr = ? AND id = ?'
+        );
+        $stmt->execute([
+            (string) $_SESSION['proveedor_bukrs'],
+            (string) $_SESSION['proveedor_sap_id'],
+            $id,
+        ]);
+    } else {
+        $stmt = $pdo->prepare(
+            'SELECT belnr, archivo, mime_type
+             FROM proveedor_facturas_sap
+             WHERE bukrs = ? AND lifnr = ? AND belnr = ? AND gjahr = ?
+             ORDER BY id
+             LIMIT 1'
+        );
+        $stmt->execute([
+            (string) $_SESSION['proveedor_bukrs'],
+            (string) $_SESSION['proveedor_sap_id'],
+            $belnr,
+            $gjahr,
+        ]);
+    }
     $attachment = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log('Could not load SAP invoice attachment metadata: ' . $e->getMessage());
@@ -49,6 +68,7 @@ if (
     exit('Factura no encontrada.');
 }
 
+$belnr = (string) $attachment['belnr'];
 $filePath = INVOICE_STORAGE_DIRECTORY . '/' . $attachment['archivo'];
 if (!is_file($filePath)) {
     http_response_code(404);

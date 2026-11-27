@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once '../services/PortalDate.php';
 
 if (!isset($_SESSION['proveedor_id'], $_SESSION['proveedor_sap_id'], $_SESSION['proveedor_bukrs'])) {
     header('Location: login.php');
@@ -49,6 +50,7 @@ if (!is_string($csrfToken) || $csrfToken === '' || !hash_equals($csrfToken, $sub
 $belnr = is_string($_POST['belnr'] ?? null) ? trim($_POST['belnr']) : '';
 $gjahr = is_string($_POST['gjahr'] ?? null) ? trim($_POST['gjahr']) : '';
 $oc = is_string($_POST['oc'] ?? null) ? trim($_POST['oc']) : '';
+$moneda = is_string($_POST['waers'] ?? null) ? strtoupper(trim($_POST['waers'])) : '';
 $documentSignature = is_string($_POST['document_signature'] ?? null)
     ? $_POST['document_signature']
     : '';
@@ -56,6 +58,7 @@ if (
     !preg_match('/^\d{1,20}$/', $belnr)
     || !preg_match('/^\d{4}$/', $gjahr)
     || !preg_match('/^\d{1,10}$/', $oc)
+    || !preg_match('/^[A-Z0-9]{1,5}$/', $moneda)
 ) {
     $redirect('error', 'La partida seleccionada no es válida.');
 }
@@ -66,6 +69,7 @@ $documentKey = implode('|', [
     $belnr,
     $gjahr,
     $oc,
+    $moneda,
 ]);
 $expectedSignature = hash_hmac('sha256', $documentKey, $csrfToken);
 if (!hash_equals($expectedSignature, $documentSignature)) {
@@ -117,14 +121,14 @@ $metodoPago = is_string($_POST['metodo_pago'] ?? null) ? trim($_POST['metodo_pag
 $indicadorImpuesto = is_string($_POST['indicador_impuesto'] ?? null)
     ? trim($_POST['indicador_impuesto'])
     : '';
-$fechaDocumentoObj = DateTimeImmutable::createFromFormat('!Y-m-d', $fechaDocumento);
+$fechaDocumentoObj = PortalDate::parseInput($fechaDocumento);
 if (
     $facturaNumero === ''
     || $longitudTexto($facturaNumero) > 50
     || !preg_match('/^\d+(?:\.\d{1,2})?$/', $neto)
+    || strlen(explode('.', $neto, 2)[0]) > 18
     || (float) $neto <= 0
-    || $fechaDocumentoObj === false
-    || $fechaDocumentoObj->format('Y-m-d') !== $fechaDocumento
+    || $fechaDocumentoObj === null
     || $metodoPago === ''
     || $longitudTexto($metodoPago) > 20
     || $indicadorImpuesto === ''
@@ -172,6 +176,17 @@ foreach ($submittedItems as $item) {
 }
 
 require_once '../config/database.php';
+try {
+    $pdo->query(
+        'SELECT id, orden_compra, factura_numero, monto_neto, moneda, fecha_documento
+         FROM proveedor_facturas_sap
+         LIMIT 0'
+    );
+} catch (PDOException $e) {
+    error_log('SAP invoice upload is disabled until the multiple invoice migration is applied: ' . $e->getMessage());
+    $redirect('error', 'La carga de facturas requiere una actualización de la base de datos. Contacte al administrador.');
+}
+
 require_once '../config/sap.php';
 require_once '../config/storage.php';
 require_once '../services/SapApiService.php';
@@ -273,47 +288,24 @@ try {
 
 try {
     $stmt = $pdo->prepare(
-        'SELECT archivo
-         FROM proveedor_facturas_sap
-         WHERE bukrs = ? AND lifnr = ? AND belnr = ? AND gjahr = ?'
-    );
-    $stmt->execute([
-        (string) $_SESSION['proveedor_bukrs'],
-        (string) $_SESSION['proveedor_sap_id'],
-        $belnr,
-        $gjahr,
-    ]);
-    $previousFile = $stmt->fetchColumn();
-
-    $stmt = $pdo->prepare(
         'INSERT INTO proveedor_facturas_sap
-            (bukrs, lifnr, belnr, gjahr, archivo, nombre_original, mime_type)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-            archivo = VALUES(archivo),
-            nombre_original = VALUES(nombre_original),
-            mime_type = VALUES(mime_type),
-            uploaded_at = CURRENT_TIMESTAMP'
+            (bukrs, lifnr, belnr, gjahr, orden_compra, factura_numero, monto_neto, moneda, fecha_documento, archivo, nombre_original, mime_type)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         (string) $_SESSION['proveedor_bukrs'],
         (string) $_SESSION['proveedor_sap_id'],
         $belnr,
         $gjahr,
+        $oc,
+        $facturaNumero,
+        $neto,
+        $moneda,
+        $fechaDocumentoObj->format('Y-m-d'),
         $storedFileName,
         $nombreArchivo,
         $mimeType,
     ]);
-
-    if (
-        is_string($previousFile)
-        && preg_match('/^[a-f0-9]{32}\.pdf$/', $previousFile)
-    ) {
-        $previousPath = $storageDirectory . '/' . $previousFile;
-        if (is_file($previousPath) && !unlink($previousPath)) {
-            error_log('Could not remove replaced SAP invoice attachment: ' . $previousPath);
-        }
-    }
 } catch (PDOException $e) {
     if (is_file($storedFilePath) && !unlink($storedFilePath)) {
         error_log('Could not clean up failed SAP invoice upload: ' . $storedFilePath);

@@ -10,12 +10,13 @@ if (
 
 require_once 'config/database.php';
 require_once 'config/sap.php';
+require_once 'services/PortalDate.php';
 require_once 'services/SapApiService.php';
 
 $proveedor_sap_id = (string) $_SESSION['proveedor_sap_id'];
 $sociedad = (string) $_SESSION['proveedor_bukrs'];
-$fecha_inicio = date('Y-m-d', strtotime('-30 days'));
-$fecha_fin = date('Y-m-d');
+$fecha_inicio = date('d/m/Y', strtotime('-30 days'));
+$fecha_fin = date('d/m/Y');
 $error = '';
 $partidas_abiertas = [];
 $partidas_cerradas = [];
@@ -54,12 +55,14 @@ if (
         ? trim($fecha_inicio_origen['fecha_fin'])
         : '';
     $submitted_csrf_token = is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '';
-    $fecha_inicio_obj = DateTimeImmutable::createFromFormat('!Y-m-d', $fecha_inicio);
-    $fecha_fin_obj = DateTimeImmutable::createFromFormat('!Y-m-d', $fecha_fin);
-    $fechas_validas = $fecha_inicio_obj !== false
-        && $fecha_inicio_obj->format('Y-m-d') === $fecha_inicio
-        && $fecha_fin_obj !== false
-        && $fecha_fin_obj->format('Y-m-d') === $fecha_fin;
+    $fecha_inicio_obj = PortalDate::parseInput($fecha_inicio);
+    $fecha_fin_obj = PortalDate::parseInput($fecha_fin);
+    $fechas_validas = $fecha_inicio_obj !== null
+        && $fecha_fin_obj !== null;
+    if ($fechas_validas) {
+        $fecha_inicio = $fecha_inicio_obj->format('d/m/Y');
+        $fecha_fin = $fecha_fin_obj->format('d/m/Y');
+    }
 
     if ($es_post && !hash_equals($csrf_token, $submitted_csrf_token)) {
         $error = 'La solicitud expiró. Recargue la página e inténtelo nuevamente.';
@@ -178,20 +181,31 @@ if (
     }
 }
 
-$facturas_cargadas = [];
+$facturas_cargadas_por_oc = [];
+$facturas_cargadas_por_documento = [];
+$facturas_schema_disponible = true;
 try {
     $stmt_facturas = $pdo->prepare(
-        'SELECT belnr, gjahr, nombre_original
+        'SELECT id, belnr, gjahr, orden_compra, factura_numero, monto_neto, moneda, fecha_documento, nombre_original
          FROM proveedor_facturas_sap
-         WHERE bukrs = ? AND lifnr = ?'
+         WHERE bukrs = ? AND lifnr = ?
+         ORDER BY id'
     );
     $stmt_facturas->execute([$sociedad, $proveedor_sap_id]);
     foreach ($stmt_facturas->fetchAll(PDO::FETCH_ASSOC) as $factura) {
-        $facturas_cargadas[$factura['gjahr'] . ':' . $factura['belnr']] = $factura['nombre_original'];
+        $orden_compra = is_string($factura['orden_compra'])
+            ? trim($factura['orden_compra'])
+            : '';
+        if ($orden_compra !== '') {
+            $facturas_cargadas_por_oc[$orden_compra][] = $factura;
+        } else {
+            $facturas_cargadas_por_documento[$factura['gjahr'] . ':' . $factura['belnr']][] = $factura;
+        }
     }
 } catch (PDOException $e) {
+    $facturas_schema_disponible = false;
     error_log('Could not load SAP invoice attachments: ' . $e->getMessage());
-    $error = 'No se pudo consultar el registro de facturas. Verifique que se haya aplicado la migración de facturas SAP.';
+    $facturas_error = 'La carga de facturas está temporalmente deshabilitada hasta aplicar la actualización de la base de datos.';
 }
 
 $firma_documento = static function (array $partida) use ($csrf_token, $sociedad, $proveedor_sap_id): string {
@@ -201,6 +215,7 @@ $firma_documento = static function (array $partida) use ($csrf_token, $sociedad,
         (string) $partida['BELNR'],
         (string) $partida['GJAHR'],
         (string) $partida['EBELN'],
+        strtoupper(trim((string) $partida['WAERS'])),
     ]);
     return hash_hmac('sha256', $documento, $csrf_token);
 };
@@ -225,6 +240,9 @@ require_once 'templates/header.php';
 <?php if (isset($_GET['error']) && is_string($_GET['error'])): ?>
     <div class="alert alert-danger"><?php echo $escape($_GET['error']); ?></div>
 <?php endif; ?>
+<?php if (isset($facturas_error)): ?>
+    <div class="alert alert-warning"><?php echo $escape($facturas_error); ?></div>
+<?php endif; ?>
 
 <div id="partidas-abiertas" class="card mb-4">
     <div class="card-header">
@@ -236,11 +254,11 @@ require_once 'templates/header.php';
             <div class="row align-items-end">
                 <div class="col-md-4 mb-3">
                     <label for="fecha_inicio" class="form-label">Desde</label>
-                    <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" value="<?php echo $escape($fecha_inicio); ?>" required>
+                    <input type="text" class="form-control" id="fecha_inicio" name="fecha_inicio" value="<?php echo $escape($fecha_inicio); ?>" placeholder="dd/mm/aaaa" inputmode="numeric" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" autocomplete="off" required>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="fecha_fin" class="form-label">Hasta</label>
-                    <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" value="<?php echo $escape($fecha_fin); ?>" required>
+                    <input type="text" class="form-control" id="fecha_fin" name="fecha_fin" value="<?php echo $escape($fecha_fin); ?>" placeholder="dd/mm/aaaa" inputmode="numeric" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" autocomplete="off" required>
                 </div>
                 <div class="col-md-4 mb-3 d-grid">
                     <button type="submit" class="btn btn-primary">Consultar partidas</button>
@@ -280,7 +298,11 @@ require_once 'templates/header.php';
                             <?php foreach ($partidas_abiertas as $partida): ?>
                                 <?php
                                 $clave_factura = $partida['GJAHR'] . ':' . $partida['BELNR'];
-                                $tiene_factura = isset($facturas_cargadas[$clave_factura]);
+                                $facturas_de_partida = array_merge(
+                                    $facturas_cargadas_por_oc[$partida['EBELN']] ?? [],
+                                    $facturas_cargadas_por_documento[$clave_factura] ?? []
+                                );
+                                $tiene_factura = $facturas_de_partida !== [];
                                 ?>
                                 <tr>
                                     <td>
@@ -296,9 +318,29 @@ require_once 'templates/header.php';
                                     <td class="text-end"><?php echo number_format((float) $partida['WRBTR'], 2, ',', '.'); ?> <?php echo $escape($partida['WAERS']); ?></td>
                                     <td>
                                         <?php if ($tiene_factura): ?>
-                                            <a href="public/descargar_factura_sap.php?belnr=<?php echo rawurlencode((string) $partida['BELNR']); ?>&amp;gjahr=<?php echo rawurlencode((string) $partida['GJAHR']); ?>">
-                                                <?php echo $escape($facturas_cargadas[$clave_factura]); ?>
-                                            </a>
+                                            <ul class="list-unstyled mb-0">
+                                                <?php foreach ($facturas_de_partida as $factura_cargada): ?>
+                                                    <?php
+                                                    $numero_factura = is_string($factura_cargada['factura_numero'])
+                                                        ? trim($factura_cargada['factura_numero'])
+                                                        : '';
+                                                    $etiqueta_factura = $numero_factura !== ''
+                                                        ? $numero_factura
+                                                        : $factura_cargada['nombre_original'];
+                                                    ?>
+                                                    <li class="mb-1">
+                                                        <a href="public/descargar_factura_sap.php?id=<?php echo rawurlencode((string) $factura_cargada['id']); ?>">
+                                                            <?php echo $escape($etiqueta_factura); ?>
+                                                        </a>
+                                                        <?php if ($factura_cargada['monto_neto'] !== null): ?>
+                                                            <small class="d-block text-muted">
+                                                                <?php echo number_format((float) $factura_cargada['monto_neto'], 2, ',', '.'); ?>
+                                                                <?php echo $escape($factura_cargada['moneda'] ?? ''); ?>
+                                                            </small>
+                                                        <?php endif; ?>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
                                         <?php else: ?>
                                             <span class="text-muted">Sin archivo</span>
                                         <?php endif; ?>
@@ -307,6 +349,10 @@ require_once 'templates/header.php';
                                         <?php if ($partida['EBELN'] === ''): ?>
                                             <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="SAP no devolvió el número de orden de compra">
                                                 OC no disponible
+                                            </button>
+                                        <?php elseif (!$facturas_schema_disponible): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Aplique la migración de facturas antes de habilitar cargas">
+                                                Carga temporalmente deshabilitada
                                             </button>
                                         <?php else: ?>
                                             <button
@@ -317,8 +363,9 @@ require_once 'templates/header.php';
                                                 data-belnr="<?php echo $escape($partida['BELNR']); ?>"
                                                 data-gjahr="<?php echo $escape($partida['GJAHR']); ?>"
                                                 data-ebeln="<?php echo $escape($partida['EBELN']); ?>"
+                                                data-waers="<?php echo $escape(strtoupper(trim((string) $partida['WAERS']))); ?>"
                                                 data-document-signature="<?php echo $escape($firma_documento($partida)); ?>"
-                                            ><?php echo $tiene_factura ? 'Reemplazar factura' : 'Cargar factura'; ?></button>
+                                            ><?php echo $tiene_factura ? 'Cargar otra factura' : 'Cargar factura'; ?></button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -426,10 +473,12 @@ require_once 'templates/header.php';
                     <input type="hidden" name="belnr" id="upload_invoice_belnr">
                     <input type="hidden" name="gjahr" id="upload_invoice_gjahr">
                     <input type="hidden" name="oc" id="upload_invoice_oc">
+                    <input type="hidden" name="waers" id="upload_invoice_waers">
                     <input type="hidden" name="document_signature" id="upload_invoice_signature">
                     <input type="hidden" name="fecha_inicio" value="<?php echo $escape($fecha_inicio); ?>">
                     <input type="hidden" name="fecha_fin" value="<?php echo $escape($fecha_fin); ?>">
                     <p class="text-muted">Orden de compra: <strong id="upload_invoice_oc_label"></strong></p>
+                    <p class="form-text">Puede registrar varias facturas para esta orden. Cada envío es independiente y SAP valida el saldo pendiente.</p>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="invoice_number" class="form-label">Número de factura</label>
@@ -441,7 +490,7 @@ require_once 'templates/header.php';
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="invoice_date" class="form-label">Fecha del documento</label>
-                            <input class="form-control" type="date" id="invoice_date" name="fecha_documento" required>
+                            <input class="form-control" type="text" id="invoice_date" name="fecha_documento" placeholder="dd/mm/aaaa" inputmode="numeric" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" autocomplete="off" required>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="invoice_payment_method" class="form-label">Método de pago</label>
@@ -533,6 +582,7 @@ document.getElementById('uploadInvoiceModal').addEventListener('show.bs.modal', 
     document.getElementById('upload_invoice_belnr').value = button.dataset.belnr;
     document.getElementById('upload_invoice_gjahr').value = button.dataset.gjahr;
     document.getElementById('upload_invoice_oc').value = button.dataset.ebeln;
+    document.getElementById('upload_invoice_waers').value = button.dataset.waers;
     document.getElementById('upload_invoice_oc_label').textContent = button.dataset.ebeln;
     document.getElementById('upload_invoice_signature').value = button.dataset.documentSignature;
 });
